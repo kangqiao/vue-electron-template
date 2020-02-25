@@ -1,7 +1,7 @@
 {
-  "author": "Muhammad Ubaid Raza <mubaidr@gmail.com>",
+  "author": "Zhao Pan <kangqiao610@gmail.com>",
   "bugs": {
-    "url": "https://github.com/mubaidr/vue-electron-template/issues"
+    "url": "https://github.com/kangqiao/vue-electron-template/issues"
   },
   "dependencies": {
     "bulma-pro": "^0.1.8",
@@ -23,6 +23,7 @@
     "acorn": "^7.1.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.6",
+    "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^5.1.1",
     "css-loader": "^3.4.2",
     "devtron": "^1.4.0",
@@ -60,10 +61,10 @@
   "main": "./dist/main.js",
   "name": "vue-electron-template",
   "private": true,
-  "productName": "Vue Electron Template",
+  "productName": "Vue Electron Multiple Windows Template",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mubaidr/vue-electron-template.git"
+    "url": "git+https://github.com/kangqiao/vue-electron-template.git"
   },
   "scripts": {
     "build": "run-s rebuild:electron pack build-release",

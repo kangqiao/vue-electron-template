@@ -45,6 +45,7 @@ const router = new Router({
 
 // dynamically set application title to current view
 router.afterEach(to => {
+  console.log('zp::: router.afterEach', to)
   let title =
     to.path === '/home'
       ? process.env.PRODUCT_NAME

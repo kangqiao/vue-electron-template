@@ -12,7 +12,7 @@ const externals = Object.keys(dependencies).concat(Object.keys(devDependencies))
 const isDevMode = process.env.NODE_ENV === 'development'
 const whiteListedModules = []
 
-const config = {
+const mainConfig = {
   name: 'main',
   mode: process.env.NODE_ENV,
   devtool: isDevMode ? 'eval' : false,
@@ -58,7 +58,10 @@ const config = {
 }
 
 if (!isDevMode) {
-  config.plugins.push(
+  /**
+   * 调整mainConfig的生产环境设置
+   */
+  mainConfig.plugins.push(
     new CopyWebpackPlugin([
       {
         from: path.join(__dirname, '../src/data'),
@@ -70,6 +73,15 @@ if (!isDevMode) {
       },
     ])
   )
-}
+} /*else {
+  /!**
+   * 调整mainConfig的开发环境设置
+   *!/
+  mainConfig.plugins.push(
+    new webpack.DefinePlugin({
+      '__static': `"${path.join(__dirname, '../static').replace(/\\/g, '\\\\')}"`
+    })
+  )
+}*/
 
-module.exports = config
+module.exports = mainConfig

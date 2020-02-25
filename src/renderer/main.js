@@ -11,6 +11,10 @@ import store from './store/index'
 
 const isDev = process.env.NODE_ENV === 'development'
 
+if (process.env.IS_BROWSER) {
+  Vue.use(require('vue-electron'))
+}
+
 Vue.config.devtools = isDev
 Vue.config.performance = isDev
 Vue.config.productionTip = isDev

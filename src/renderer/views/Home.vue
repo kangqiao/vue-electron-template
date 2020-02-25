@@ -5,10 +5,11 @@
         <br />
         <div class="block has-text-centered">
           <figure class="image is-128x128">
-            <img alt="Placeholder image" src="../../../_icons/512pxblue.png" />
+            <img alt="Placeholder image" src="../assets/img/pxblue.png" />
           </figure>
         </div>
         <div class="content has-text-centered">
+          <button @click="openNewPage">{{title}}</button>
           <h1 class="title is-4">
             Vue-Electron-Template
           </h1>
@@ -34,6 +35,24 @@ import Vue from 'vue'
 
 export default Vue.extend({
   name: 'Home',
+  data() {
+    return {
+      isShowNewPage: false,
+      title: '打开新页面'
+    }
+  },
+  methods: {
+    openNewPage() {
+      this.isShowNewPage = !this.isShowNewPage;
+      if (this.isShowNewPage) {
+        this.title = '关闭新页面'
+        this.$electron.ipcRenderer.send('showNewPageWindow');
+      } else {
+        this.title = '打开新页面'
+        this.$electron.ipcRenderer.send('hideNewPageWindow');
+      }
+    },
+  },
 })
 </script>
 

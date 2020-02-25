@@ -2,8 +2,10 @@ const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
+//const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const {entries, htmlPlugin} = require('./muti-page.config');
 
 const {
   dependencies,
@@ -20,12 +22,13 @@ const config = {
   mode: process.env.NODE_ENV,
   devtool: isDevMode ? 'eval' : false,
   entry: {
-    renderer: path.join(__dirname, '../src/renderer/main.js'),
+    main: path.join(__dirname, '../src/renderer/main.js'),
+    ...entries()
   },
   output: {
+    filename: '[name]/index.js',
     libraryTarget: 'commonjs2',
     path: path.join(__dirname, '../dist'),
-    filename: '[name].js',
   },
   externals: externals.filter(d => !whiteListedModules.includes(d)),
   module: {
@@ -115,27 +118,32 @@ const config = {
     __filename: isDevMode,
   },
   plugins: [
+    //new CleanWebpackPlugin(['dist']),
     // new WriteFilePlugin(),
+    new VueLoaderPlugin(),
+    new webpack.DefinePlugin({
+      'process.env.PRODUCT_NAME': JSON.stringify(productName),
+      'process.env.IS_BROWSER': true,
+    }),
+    new MiniCssExtractPlugin({
+      filename: '[name]/style.css',
+      chunkFilename: '[id].css',
+    }),
     new HtmlWebpackPlugin({
+      title: 'main',
       excludeChunks: ['processTaskWorker'],
-      filename: 'index.html',
-      template: path.resolve(__dirname, '../src/index.ejs'),
+      filename: 'main/index.html',
+      chunks: ['manifest', 'vendor', 'main'],
+      template: path.resolve(__dirname, '../src/renderer/index.ejs'),
       nodeModules: isDevMode
         ? path.resolve(__dirname, '../node_modules')
         : false,
     }),
-    new VueLoaderPlugin(),
-    new webpack.DefinePlugin({
-      'process.env.PRODUCT_NAME': JSON.stringify(productName),
-    }),
-    new MiniCssExtractPlugin({
-      filename: '[name].css',
-      chunkFilename: '[id].css',
-    }),
-  ],
+  ].concat(htmlPlugin()),
   resolve: {
     alias: {
-      vue$: 'vue/dist/vue.common.js',
+      //vue$: 'vue/dist/vue.common.js',
+      vue$: 'vue/dist/vue.esm.js',
       '@': path.join(__dirname, '../src/'),
       src: path.join(__dirname, '../src/'),
       icons: path.join(__dirname, '../_icons/'),
@@ -157,6 +165,10 @@ if (isDevMode) {
       {
         from: path.join(__dirname, '../static'),
         to: path.join(__dirname, '../dist/static'),
+      },
+      {
+        from: path.join(__dirname, '../_icons'),
+        to: path.join(__dirname, '../dist/icons'),
       },
     ])
   )

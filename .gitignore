@@ -16,3 +16,7 @@ tmp/
 dist
 coverage
 __coverage__
+
+node_modules.zip
+yarn.lock
+.idea

@@ -60,6 +60,7 @@ function createWindow() {
       webSecurity: false,
     },
     show: false,
+    title: 'vue-electron多界面',
   })
 
   // eslint-disable-next-line
@@ -67,9 +68,9 @@ function createWindow() {
 
   // load root file/url
   if (isDev) {
-    mainWindow.loadURL('http://localhost:9080')
+    mainWindow.loadURL('http://localhost:9080/main')
   } else {
-    mainWindow.loadFile(`${__dirname}/index.html`)
+    mainWindow.loadFile(`${__dirname}/main/index.html`)
 
     global.__static = require('path')
       .join(__dirname, '/static')
@@ -85,6 +86,9 @@ function createWindow() {
   mainWindow.on('closed', () => {
     console.log('closed')
   })
+
+  // 引入newPage.js，负责悬浮窗口内主进程和渲染进程之间的通信
+  require('./newPage');
 }
 
 app.on('ready', () => {
