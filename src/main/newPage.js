@@ -18,7 +18,10 @@ function createNewPageWindow() {
     show: false, // 先不让窗口显示
     webPreferences: {
       devTools: true, // 关闭调试工具
-      webSecurity: true,
+      nodeIntegration: true,
+      nodeIntegrationInWorker: false,
+      webSecurity: false,
+      webviewTag: true,
     },
     useContentSize: true,
   });

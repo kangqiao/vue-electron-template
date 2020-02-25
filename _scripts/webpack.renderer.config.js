@@ -142,8 +142,8 @@ const config = {
   ].concat(htmlPlugin()),
   resolve: {
     alias: {
-      //vue$: 'vue/dist/vue.common.js',
-      vue$: 'vue/dist/vue.esm.js',
+      vue$: 'vue/dist/vue.common.js',
+      //vue$: 'vue/dist/vue.esm.js',
       '@': path.join(__dirname, '../src/'),
       src: path.join(__dirname, '../src/'),
       icons: path.join(__dirname, '../_icons/'),
