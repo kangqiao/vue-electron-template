@@ -40,6 +40,7 @@ const mainConfig = {
   plugins: [
     new webpack.DefinePlugin({
       'process.env.PRODUCT_NAME': JSON.stringify(productName),
+      'process.env.IS_BROWSER': false,
     }),
   ],
   output: {
@@ -73,15 +74,15 @@ if (!isDevMode) {
       },
     ])
   )
-} /*else {
-  /!**
+} else {
+  /**
    * 调整mainConfig的开发环境设置
-   *!/
+   */
   mainConfig.plugins.push(
     new webpack.DefinePlugin({
       '__static': `"${path.join(__dirname, '../static').replace(/\\/g, '\\\\')}"`
     })
   )
-}*/
+}
 
 module.exports = mainConfig

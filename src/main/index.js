@@ -1,26 +1,34 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, ipcMain } from 'electron'
+const log = require("electron-log")
+import {MAIN, isDev, isDebug, installDevTools} from './constants'
 import { productName } from '../../package.json'
+import createMainWindow from './main'
+import customWindow from './custom_window'
 
+log.transports.file.level = "debug"
 // set app name
 app.setName(productName)
 
 // disable electron warning
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
-const gotTheLock = app.requestSingleInstanceLock()
-const isDev = process.env.NODE_ENV === 'development'
-const isDebug = process.argv.includes('--debug')
+var windowsManager = {}
 let mainWindow
 
+//app.requestSingleInstanceLock()指示应用程序实例锁定成功与否，
+// 当无法成功锁定时，可能是应用程序的另一个实例正在执行, 此时应当结束当前实例。
+const gotTheLock = app.requestSingleInstanceLock()
 // only allow single instance of application
 if (!isDev) {
   if (gotTheLock) {
     app.on('second-instance', () => {
       // Someone tried to run a second instance, we should focus our window.
-      if (mainWindow && mainWindow.isMinimized()) {
-        mainWindow.restore()
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore()
+        }
+        mainWindow.focus()
       }
-      mainWindow.focus()
     })
   } else {
     app.quit()
@@ -32,182 +40,152 @@ if (!isDev) {
   })
 }
 
-async function installDevTools() {
-  try {
-    /* eslint-disable */
-    require('devtron').install()
-    require('vue-devtools').install()
-    /* eslint-enable */
-  } catch (err) {
-    console.log(err)
-  }
-}
-
-function createWindow() {
-  /**
-   * Initial window options
-   */
-  mainWindow = new BrowserWindow({
-    backgroundColor: '#fff',
-    width: 960,
-    height: 540,
-    minWidth: 960,
-    minHeight: 540,
-    // useContentSize: true,
-    webPreferences: {
-      nodeIntegration: true,
-      nodeIntegrationInWorker: false,
-      webSecurity: false,
-    },
-    show: false,
-    title: 'vue-electron多界面',
-  })
-
-  // eslint-disable-next-line
-  setMenu()
-
-  // load root file/url
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:9080/main')
-  } else {
-    mainWindow.loadFile(`${__dirname}/main/index.html`)
-
-    global.__static = require('path')
-      .join(__dirname, '/static')
-      .replace(/\\/g, '\\\\')
-  }
-
-  // Show when loaded
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-    mainWindow.focus()
-  })
-
-  mainWindow.on('closed', () => {
-    console.log('closed')
-  })
-
-  // 引入newPage.js，负责悬浮窗口内主进程和渲染进程之间的通信
-  require('./newPage');
-}
-
 app.on('ready', () => {
-  createWindow()
+  let window = newWindow(MAIN, null, null)
 
   if (isDev) {
     installDevTools()
   }
 
   if (isDebug) {
-    mainWindow.webContents.openDevTools()
+    if (window) {
+      window.webContents.openDevTools()
+    }
   }
 })
 
 app.on('window-all-closed', () => {
+  log.info('app.on(\'window-all-closed\') ')
   if (process.platform !== 'darwin') {
+    //通知主窗口应用程序退出事件
+    sendMainMessage('app-quit')
     app.quit()
   }
 })
 
 app.on('activate', () => {
+  log.info('app.on(\'active\') mainWindow=' + (mainWindow === null))
   if (mainWindow === null) {
-    createWindow()
+    //createMainWindow()
+    newWindow(MAIN, null, null)
   }
 })
 
-/**
- * Auto Updater
- *
- * Uncomment the following code below and install `electron-updater` to
- * support auto updating. Code Signing with a valid certificate is required.
- * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-electron-builder.html#auto-updating
- */
-
-/*
-import { autoUpdater } from 'electron-updater'
-
-autoUpdater.on('update-downloaded', () => {
-  autoUpdater.quitAndInstall()
-})
-
-app.on('ready', () => {
-  if (process.env.NODE_ENV === 'production') autoUpdater.checkForUpdates()
-})
- */
-
-const sendMenuEvent = async data => {
-  mainWindow.webContents.send('change-view', data)
-}
-
-const template = [
-  {
-    label: app.getName(),
-    submenu: [
-      {
-        label: 'Home',
-        accelerator: 'CommandOrControl+H',
-        click() {
-          sendMenuEvent({ route: '/' })
-        },
-      },
-      { type: 'separator' },
-      { role: 'minimize' },
-      { role: 'togglefullscreen' },
-      { type: 'separator' },
-      { role: 'quit', accelerator: 'Alt+F4' },
-    ],
-  },
-  {
-    role: 'help',
-    submenu: [
-      {
-        label: 'Get Help',
-        role: 'help',
-        accelerator: 'F1',
-        click() {
-          sendMenuEvent({ route: '/help' })
-        },
-      },
-      {
-        label: 'About',
-        role: 'about',
-        accelerator: 'CommandOrControl+A',
-        click() {
-          sendMenuEvent({ route: '/about' })
-        },
-      },
-    ],
-  },
-]
-
-function setMenu() {
-  if (process.platform === 'darwin') {
-    template.unshift({
-      label: app.getName(),
-      submenu: [
-        { role: 'about' },
-        { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideothers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    })
-
-    template.push({
-      role: 'window',
-    })
-
-    template.push({
-      role: 'help',
-    })
-
-    template.push({ role: 'services' })
+//创建新窗口
+function newWindow(name, path, option, listener) {
+  if (!name) {
+    log.warn('new window failed!!! name=' + name)
+    return
   }
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  let newWin
+  if (name === MAIN) {
+    mainWindow = createMainWindow({name, path, option}, {
+      onCreated(window) {
+        log.info('main window created!')
+        // todo 调整主窗口
+      },
+      onLoaded(window) {
+        log.info('main window loaded!')
+        window.show()
+        window.focus()
+      },
+      onDestroyed(name) {
+        // 主窗口被关闭
+        //windowsManager[name] = null
+      }
+    })
+    newWin = mainWindow
+    windowsManager[MAIN] = mainWindow
+  } else {
+    // 创建新窗口
+    newWin = customWindow({name, path, option}, {
+      onCreated(window) {
+        log.info('custom window (' + name + ') created!')
+        // 调整子窗口大小,......
+        if (listener && listener.onCreated) listener.onCreated(window)
+      },
+      onLoaded(window) {
+        log.info('custom window (' + name + ') loaded!')
+        window.show()
+        window.focus()
+        if (listener && listener.onLoaded) listener.onLoaded(window)
+      },
+      onDestroyed(name) {
+        log.info('custom window (' + name + ') destroyed!')
+        // 说明窗口已经被关闭.
+        windowsManager[name] = null
+        if (listener && listener.onDestroyed) listener.onDestroyed(name)
+      }
+    })
+    windowsManager[name] = newWin
+  }
+
+  return newWin
 }
+
+// 关闭并清除name指定的窗口
+function cleanWindows(name) {
+  if (windowsManager[name]) {
+    if (!windowsManager[name].isDestroyed()) {
+      windowsManager[name].destroy()
+    } else {
+      windowsManager[name] = null
+    }
+  }
+}
+
+// 关闭除MAIN主窗口外的其他窗口
+function cleanAllWindows() {
+  for (let key in windowsManager) {
+    if (key != MAIN) {
+      cleanWindows(key)
+    }
+  }
+}
+
+//向主窗口发送事件
+function sendMainMessage(event, data) {
+  if (mainWindow) {
+    mainWindow.webContents.send(event, data)
+  }
+}
+
+//---------------------------------//
+//--------主进程监听窗口事件--------//
+//---------------------------------//
+
+// 显示窗口, 如果不存在则为其创建
+ipcMain.on('showOrNewWindow', (event, args) => {
+  log.info('showOrNewWindow args=' +  JSON.stringify(args))
+  const {name, path, option} = args
+  if (windowsManager[name]) {
+    log.info('showOrNewWindow window=' + windowsManager[name])
+    windowsManager[name].show();
+  } else {
+    newWindow(name, path, option)
+  }
+});
+
+// 隐藏窗口
+ipcMain.on('hideWindow', (event, args) => {
+  log.info('hideWindow args=' +  JSON.stringify(args))
+  const name = args.name
+  if (windowsManager[name]) {
+    windowsManager[name].hide()
+  }
+});
+
+// 关闭窗口
+ipcMain.on('closeWindow', (event, args) => {
+  log.info('closeWindow args=' +  JSON.stringify(args))
+  const name = args.name
+  const force = args.force
+  if (windowsManager[name]) {
+    if (force) {
+      windowsManager[name].destroy()
+    } else {
+      windowsManager[name].close()
+    }
+  }
+})

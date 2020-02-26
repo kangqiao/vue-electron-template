@@ -107,7 +107,7 @@ const config = {
           loader: 'url-loader',
           query: {
             limit: 10000,
-            name: 'fonts/[name]--[folder].[ext]',
+            name: '/fonts/[name]--[folder].[ext]',
           },
         },
       },

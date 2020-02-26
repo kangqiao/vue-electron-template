@@ -1,3 +1,5 @@
+/* Created by zhaopan on 2020/02/25. */
+// Deprecated by 2020/02/26
 import { BrowserWindow, ipcMain, screen } from 'electron'
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -51,23 +53,3 @@ function createNewPageWindow() {
   });
 
 }
-
-/**
- * 监听创建新窗口
- */
-ipcMain.on('showNewPageWindow', () => {
-  if (win) {
-    win.show();
-  } else {
-    createNewPageWindow();
-  }
-});
-
-/**
- * 监听隐藏新窗口
- */
-ipcMain.on('hideNewPageWindow', () => {
-  if (win) {
-    win.hide();
-  }
-});

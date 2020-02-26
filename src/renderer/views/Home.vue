@@ -46,10 +46,12 @@ export default Vue.extend({
       this.isShowNewPage = !this.isShowNewPage;
       if (this.isShowNewPage) {
         this.title = '关闭新页面'
-        this.$electron.ipcRenderer.send('showNewPageWindow');
+        this.$electron.ipcRenderer.send('showOrNewWindow', {
+          name: 'newPage',
+        });
       } else {
         this.title = '打开新页面'
-        this.$electron.ipcRenderer.send('hideNewPageWindow');
+        this.$electron.ipcRenderer.send('hideWindow', {name: 'newPage'});
       }
     },
   },
