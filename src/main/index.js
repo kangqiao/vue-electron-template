@@ -1,16 +1,15 @@
 import { app, ipcMain } from 'electron'
-const log = require("electron-log")
-import {MAIN, isDev, isDebug, installDevTools} from './constants'
+import {isDebug, isDev, names, events, channels, installDevTools, setMainWindow, logInfo} from './constants'
 import { productName } from '../../package.json'
 import createMainWindow from './main'
 import customWindow from './custom_window'
 
-log.transports.file.level = "debug"
 // set app name
 app.setName(productName)
 
 // disable electron warning
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
+
 
 var windowsManager = {}
 let mainWindow
@@ -41,52 +40,63 @@ if (!isDev) {
 }
 
 app.on('ready', () => {
-  let window = newWindow(MAIN, null, null)
+  newWindow(names.MAIN, null, null)
 
   if (isDev) {
     installDevTools()
   }
-
-  if (isDebug) {
-    if (window) {
-      window.webContents.openDevTools()
-    }
-  }
 })
 
 app.on('window-all-closed', () => {
-  log.info('app.on(\'window-all-closed\') ')
+  logInfo('app.on(\'window-all-closed\') ')
   if (process.platform !== 'darwin') {
     //通知主窗口应用程序退出事件
-    sendMainMessage('app-quit')
+    sendMainMessage(events.APP_QUIT)
     app.quit()
   }
 })
 
+
 app.on('activate', () => {
-  log.info('app.on(\'active\') mainWindow=' + (mainWindow === null))
+  logInfo('app.on(\'active\') mainWindow=' + (mainWindow === null))
   if (mainWindow === null) {
     //createMainWindow()
-    newWindow(MAIN, null, null)
+    newWindow(names.MAIN, null, null)
+  } else {
+    if (mainWindow != null) {
+      mainWindow.show()
+    }
   }
 })
 
+//---------------------------------//
+//--------窗口管理公共函数----------//
+//---------------------------------//
 //创建新窗口
 function newWindow(name, path, option, listener) {
   if (!name) {
-    log.warn('new window failed!!! name=' + name)
-    return
+    logInfo('new window failed!!! name=' + name)
+    reurn
   }
 
   let newWin
-  if (name === MAIN) {
-    mainWindow = createMainWindow({name, path, option}, {
+  if (name === names.MAIN) {
+    mainWindow = createMainWindow({name}, {
       onCreated(window) {
-        log.info('main window created!')
-        // todo 调整主窗口
+        logInfo('main window created!')
+        // 设置MainWindow
+        setMainWindow(window)
+        window.setBackgroundColor('#131625')
+        if (isDebug) {
+          if (window) {
+            window.webContents.openDevTools()
+          }
+        }
       },
       onLoaded(window) {
-        log.info('main window loaded!')
+        logInfo('main window loaded!')
+        window.setBackgroundColor('#131625')
+        window.center()
         window.show()
         window.focus()
       },
@@ -96,23 +106,29 @@ function newWindow(name, path, option, listener) {
       }
     })
     newWin = mainWindow
-    windowsManager[MAIN] = mainWindow
+    windowsManager[names.MAIN] = mainWindow
   } else {
     // 创建新窗口
     newWin = customWindow({name, path, option}, {
       onCreated(window) {
-        log.info('custom window (' + name + ') created!')
+        logInfo('custom window (' + name + ') created!')
         // 调整子窗口大小,......
         if (listener && listener.onCreated) listener.onCreated(window)
+
+        if (isDebug) {
+          if (window) {
+            window.webContents.openDevTools()
+          }
+        }
       },
       onLoaded(window) {
-        log.info('custom window (' + name + ') loaded!')
+        logInfo('custom window (' + name + ') loaded!')
         window.show()
         window.focus()
         if (listener && listener.onLoaded) listener.onLoaded(window)
       },
       onDestroyed(name) {
-        log.info('custom window (' + name + ') destroyed!')
+        logInfo('custom window (' + name + ') destroyed!')
         // 说明窗口已经被关闭.
         windowsManager[name] = null
         if (listener && listener.onDestroyed) listener.onDestroyed(name)
@@ -124,8 +140,17 @@ function newWindow(name, path, option, listener) {
   return newWin
 }
 
+function showMainWindow (isNewIfNoExist) {
+  let window = windowsManager[names.MAIN]
+  if (window) {
+    window.show()
+  } else if (isNewIfNoExist) {
+    newWindow(names.MAIN, '', null)
+  }
+}
+
 // 关闭并清除name指定的窗口
-function cleanWindows(name) {
+function closeWindows(name) {
   if (windowsManager[name]) {
     if (!windowsManager[name].isDestroyed()) {
       windowsManager[name].destroy()
@@ -136,18 +161,11 @@ function cleanWindows(name) {
 }
 
 // 关闭除MAIN主窗口外的其他窗口
-function cleanAllWindows() {
+function closeAllWindows() {
   for (let key in windowsManager) {
-    if (key != MAIN) {
-      cleanWindows(key)
+    if (key != names.MAIN) {
+      closeWindows(key)
     }
-  }
-}
-
-//向主窗口发送事件
-function sendMainMessage(event, data) {
-  if (mainWindow) {
-    mainWindow.webContents.send(event, data)
   }
 }
 
@@ -157,10 +175,10 @@ function sendMainMessage(event, data) {
 
 // 显示窗口, 如果不存在则为其创建
 ipcMain.on('showOrNewWindow', (event, args) => {
-  log.info('showOrNewWindow args=' +  JSON.stringify(args))
+  logInfo('showOrNewWindow args=' +  JSON.stringify(args))
   const {name, path, option} = args
   if (windowsManager[name]) {
-    log.info('showOrNewWindow window=' + windowsManager[name])
+    logInfo('showOrNewWindow window=' + windowsManager[name])
     windowsManager[name].show();
   } else {
     newWindow(name, path, option)
@@ -169,7 +187,7 @@ ipcMain.on('showOrNewWindow', (event, args) => {
 
 // 隐藏窗口
 ipcMain.on('hideWindow', (event, args) => {
-  log.info('hideWindow args=' +  JSON.stringify(args))
+  logInfo('hideWindow args=' +  JSON.stringify(args))
   const name = args.name
   if (windowsManager[name]) {
     windowsManager[name].hide()
@@ -178,7 +196,7 @@ ipcMain.on('hideWindow', (event, args) => {
 
 // 关闭窗口
 ipcMain.on('closeWindow', (event, args) => {
-  log.info('closeWindow args=' +  JSON.stringify(args))
+  logInfo('closeWindow args=' +  JSON.stringify(args))
   const name = args.name
   const force = args.force
   if (windowsManager[name]) {

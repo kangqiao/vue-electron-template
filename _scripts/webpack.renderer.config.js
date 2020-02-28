@@ -1,6 +1,7 @@
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 //const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin')
@@ -8,14 +9,14 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const {entries, htmlPlugin} = require('./muti-page.config');
 
 const {
-  dependencies,
-  devDependencies,
+  // dependencies,
+  // devDependencies,
   productName,
 } = require('../package.json')
 
-const externals = Object.keys(dependencies).concat(Object.keys(devDependencies))
+// const externals = Object.keys(dependencies).concat(Object.keys(devDependencies))
 const isDevMode = process.env.NODE_ENV === 'development'
-const whiteListedModules = ['vue']
+// const whiteListedModules = ['vue']
 
 const config = {
   name: 'renderer',
@@ -30,7 +31,7 @@ const config = {
     libraryTarget: 'commonjs2',
     path: path.join(__dirname, '../dist'),
   },
-  externals: externals.filter(d => !whiteListedModules.includes(d)),
+  // externals: externals.filter(d => !whiteListedModules.includes(d)),
   module: {
     rules: [
       {
@@ -55,49 +56,23 @@ const config = {
         // },
       },
       {
-        test: /\.s(c|a)ss$/,
+        test: /\.(sa|sc|c)ss$/,
         use: [
-          // {
-          //   loader: 'vue-style-loader',
-          // },
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              hmr: isDevMode,
-            },
-          },
-          {
-            loader: 'css-loader',
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              // eslint-disable-next-line
-              implementation: require('sass'),
-            },
-          },
-        ],
-      },
-      {
-        test: /\.css$/,
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              hmr: isDevMode,
-            },
-          },
-          // 'style-loader',
+          isDevMode ? 'style-loader' : MiniCssExtractPlugin.loader,
           'css-loader',
+          //'postcss-loader',
+          'sass-loader',
         ],
       },
       {
         test: /\.(png|jpe?g|gif|tif?f|bmp|webp|svg)(\?.*)?$/,
         use: {
           loader: 'url-loader',
-          query: {
-            limit: 10000,
-            name: 'imgs/[name]--[folder].[ext]',
+          options: {
+            limit: 10000, //小于10K的 都打包
+            name: '[name]--[folder].[ext]', //生成文件名
+            publicPath:"../imgs",	//替换CSS引用的图片路径
+            outputPath:"../dist/imgs/"		//生成之后存放的路径
           },
         },
       },
@@ -105,9 +80,11 @@ const config = {
         test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
         use: {
           loader: 'url-loader',
-          query: {
-            limit: 10000,
-            name: '/fonts/[name]--[folder].[ext]',
+          options: {
+            limit: 10000, //小于10K的 都打包
+            name: '[name]--[folder].[ext]',
+            publicPath:"../fonts",	//替换字体文件向上查找
+            outputPath:"../dist/fonts/"		//生成之后存放的路径
           },
         },
       },
@@ -164,7 +141,11 @@ if (isDevMode) {
     new CopyWebpackPlugin([
       {
         from: path.join(__dirname, '../static'),
-        to: path.join(__dirname, '../dist/static'),
+        to: path.join(__dirname, '../dist/main/static'),
+      },
+      {
+        from: path.join(__dirname, '../static'),
+        to: path.join(__dirname, '../dist/newPage/static'),
       },
       {
         from: path.join(__dirname, '../_icons'),
@@ -172,6 +153,12 @@ if (isDevMode) {
       },
     ])
   )
+
+  // config.optimization = {
+  //   splitChunks: {
+  //     chunks: 'all',
+  //   },
+  // }
 }
 
 module.exports = config

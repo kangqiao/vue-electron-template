@@ -1,18 +1,17 @@
 /* Created by zhaopan on 2020/2/26. */
 import { BrowserWindow, screen } from 'electron'
-import {isDev} from './constants'
-const log = require("electron-log")
+import { isDev, logInfo} from './constants'
 
 /**
  * 创建定制化的新窗口函数
  */
 function customWindow(param, listener) {
+  logInfo('customWindow(param:' + JSON.stringify(param) + ')')
   const {name, path, option} = param
 
   const defOption = {
     width: 420,
     height: 250,
-    resizable: false,
     minimizable: false,
     maximizable: false,
     webPreferences: {
@@ -23,6 +22,7 @@ function customWindow(param, listener) {
       webviewTag: true,
     },
     //type: 'toolbar', // 创建的窗口类型为工具栏窗口
+    resizable: true, //窗口是否可以改变尺寸
     movable: true, // 窗口是否可以移动
     show: false, // 先不让窗口显示
     //focus: true,
@@ -65,12 +65,15 @@ function customWindow(param, listener) {
   }
   if (path) {
     routePath += '/' + path
+  } else {
+    routePath += '/index.html'
   }
 
   if (isDev) {
     window.loadURL('http://localhost:9080/' + routePath)
   } else {
     window.loadFile(`${__dirname}/${routePath}`)
+    window.routerPath = routePath
 
     global.__static = require('path')
       .join(__dirname, '/static')
@@ -88,7 +91,7 @@ function customWindow(param, listener) {
 
   // 监听窗口关闭
   window.on('closed', () => {
-    log.info('custom window (' + name + ') closed!')
+    logInfo('custom window (' + name + ') closed!')
     if (listener && listener.onDestroyed) {
       listener.onDestroyed(name)
     }

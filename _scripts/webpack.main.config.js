@@ -58,7 +58,16 @@ const mainConfig = {
   target: 'electron-main',
 }
 
-if (!isDevMode) {
+if (isDevMode) {
+  /**
+   * 调整mainConfig的开发环境设置
+   */
+  mainConfig.plugins.push(
+    new webpack.DefinePlugin({
+      '__static': `"${path.join(__dirname, '../static').replace(/\\/g, '\\\\')}"`
+    })
+  )
+} else {
   /**
    * 调整mainConfig的生产环境设置
    */
@@ -68,20 +77,7 @@ if (!isDevMode) {
         from: path.join(__dirname, '../src/data'),
         to: path.join(__dirname, '../dist/data'),
       },
-      {
-        from: path.join(__dirname, '../static'),
-        to: path.join(__dirname, '../dist/static'),
-      },
     ])
-  )
-} else {
-  /**
-   * 调整mainConfig的开发环境设置
-   */
-  mainConfig.plugins.push(
-    new webpack.DefinePlugin({
-      '__static': `"${path.join(__dirname, '../static').replace(/\\/g, '\\\\')}"`
-    })
   )
 }
 

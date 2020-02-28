@@ -1,6 +1,7 @@
 // import the styles
 import 'bulma-pro/bulma.sass'
 import { ipcRenderer } from 'electron'
+import { events } from '../main/constants'
 import 'material-design-icons/iconfont/material-icons.css'
 import Vue from 'vue'
 import App from './App.vue'
@@ -33,3 +34,7 @@ ipcRenderer.on('change-view', (event, data) => {
     router.push(data.route)
   }
 })
+
+ipcRenderer.on(events.LOG_MESSAGE, ((event, args) => {
+  console.log('zp::: main renderer log>>>' + args)
+}))
