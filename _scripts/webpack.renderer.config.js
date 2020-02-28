@@ -135,7 +135,12 @@ const config = {
  */
 if (isDevMode) {
   // any dev only config
-  config.plugins.push(new webpack.HotModuleReplacementPlugin())
+  config.plugins.push(
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.DefinePlugin({
+      '__static': `"${path.join(__dirname, '../static').replace(/\\/g, '\\\\')}"`
+    })
+  )
 } else {
   config.plugins.push(
     new CopyWebpackPlugin([

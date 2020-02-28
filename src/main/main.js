@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu } from 'electron'
-import {isDev, events, logInfo} from './constants'
+import {isDev, events } from './constants'
+import {sendMainMessage, logInfo} from './utils'
 
 
 let mainWindow
@@ -49,8 +50,8 @@ function createMainWindow(param, listener) {
 
   // Show when loaded
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-    mainWindow.focus()
+    // mainWindow.show()
+    // mainWindow.focus()
     if (listener && listener.onLoaded) {
       listener.onLoaded(mainWindow)
     }
@@ -103,13 +104,6 @@ function createMainWindow(param, listener) {
   })
 
   return mainWindow
-}
-
-//向主窗口发送事件
-function sendMainMessage(event, data) {
-  if (mainWindow) {
-    mainWindow.webContents.send(event, data)
-  }
 }
 
 /**

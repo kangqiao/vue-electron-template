@@ -1,6 +1,7 @@
 import { app, ipcMain } from 'electron'
-import {isDebug, isDev, names, events, channels, installDevTools, setMainWindow, logInfo} from './constants'
-import { productName } from '../../package.json'
+import {isDebug, isDev, names, events, channels} from './constants'
+import {installDevTools, setMainWindow, sendMainMessage, logInfo} from './utils'
+import { productName, version } from '../../package.json'
 import createMainWindow from './main'
 import customWindow from './custom_window'
 
@@ -76,7 +77,7 @@ app.on('activate', () => {
 function newWindow(name, path, option, listener) {
   if (!name) {
     logInfo('new window failed!!! name=' + name)
-    reurn
+    return
   }
 
   let newWin

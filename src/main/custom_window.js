@@ -1,6 +1,7 @@
 /* Created by zhaopan on 2020/2/26. */
 import { BrowserWindow, screen } from 'electron'
-import { isDev, logInfo} from './constants'
+import { isDev} from './constants'
+import {logInfo} from './utils'
 
 /**
  * 创建定制化的新窗口函数
